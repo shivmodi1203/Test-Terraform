@@ -46,7 +46,7 @@ stages:
     - task: TerraformCLI@2
       inputs:
         command: 'plan'
-        environmentServiceName: 'dev-propel-subscription'
+        environmentServiceName: 'shiv_terraform_service_connection'
         providerAzureRmSubscriptionId: '664b6097-19f2-42a3-be95-a4a6b4069f6b'
         commandOptions: '-var-file=terraform.$(env).tfvars -out=$(System.DefaultWorkingDirectory)/$(env)tfplan'
         allowTelemetryCollection: false
@@ -115,7 +115,7 @@ stages:
     - task: TerraformCLI@2
       inputs:
         command: 'apply'
-        environmentServiceName: 'dev-propel-subscription'
+        environmentServiceName: 'shiv_terraform_service_connection'
         commandOptions: '$(System.DefaultWorkingDirectory)/$(env)tfplan'
         allowTelemetryCollection: true
-      displayName: 'Terraform Apply'
+      displayName: 'Terraform Apply new'
