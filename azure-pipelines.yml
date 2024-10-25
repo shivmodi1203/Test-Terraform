@@ -1,0 +1,121 @@
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  env: dev
+
+stages:
+- stage : terraformInit
+  displayName: "Terraform Init"
+  jobs :  
+  - job: Terraform_init
+    displayName: "Terraform init" 
+    steps:
+    - task: TerraformInstaller@2
+      inputs:
+        terraformVersion: 'v1.9.0'
+    - task: TerraformCLI@2
+      inputs:
+        command: 'init'
+        backendType: 'azurerm'
+        backendServiceArm: 'shiv_terraform_service_connection'
+        backendAzureRmTenantId: '0adb040b-ca22-4ca6-9447-ab7b049a22ff'
+        backendAzureRmSubscriptionId: '664b6097-19f2-42a3-be95-a4a6b4069f6b'
+        backendAzureRmResourceGroupName: 'sa1_test_eic_ShivModi'
+        backendAzureRmStorageAccountName: '12345mystorage'
+        backendAzureRmContainerName: 'mycontainer'
+        backendAzureRmKey: 'propel.terraform.tfstate'
+        allowTelemetryCollection: true
+      displayName: 'Terraform init'
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'validate'
+      displayName: 'Terraform validate'
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'workspace'
+        commandOptions: '-or-create'
+        allowTelemetryCollection: true
+        workspaceName: $(env)
+      displayName: 'Workspace select'
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'plan'
+        environmentServiceName: 'dev-propel-subscription'
+        providerAzureRmSubscriptionId: '664b6097-19f2-42a3-be95-a4a6b4069f6b'
+        commandOptions: '-var-file=terraform.$(env).tfvars -out=$(System.DefaultWorkingDirectory)/$(env)tfplan'
+        allowTelemetryCollection: false
+        publishPlanResults: '$(env)-plan'
+      displayName: 'Terraform plan'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(System.DefaultWorkingDirectory)/$(env)tfplan'
+        artifact: 'tfplan'
+        publishLocation: 'pipeline'
+      displayName: 'Publish Pipeline Artifacts'
+        
+  - job: TerrraformApproval
+    displayName: "Terraform approval"
+    dependsOn:
+      - Terraform_init
+    pool: server
+    steps:  
+    - task: ManualValidation@0
+      timeoutInMinutes: 1440 # task times out in 1 day
+      inputs:
+        notifyUsers: |
+          shiv.modi@eInfochipsIndia.onmicrosoft.com
+        instructions: 'Please validate the build plan and resume'
+        onTimeout: 'resume'
+      displayName: 'Manual Validation'
+
+  - job: TerrraformApply
+    displayName: "Terraform apply"
+    dependsOn:
+      - TerrraformApproval
+    steps:
+    - task: TerraformInstaller@2
+      inputs:
+        terraformVersion: 'v1.9.0'
+    - task: TerraformCLI@2
+      inputs:
+        command: 'init'
+        backendType: 'azurerm'
+        backendServiceArm: 'shiv_terraform_service_connection'
+        backendAzureRmTenantId: '0adb040b-ca22-4ca6-9447-ab7b049a22ff'
+        backendAzureRmSubscriptionId: '664b6097-19f2-42a3-be95-a4a6b4069f6b'
+        backendAzureRmResourceGroupName: 'sa1_test_eic_ShivModi'
+        backendAzureRmStorageAccountName: '12345mystorage'
+        backendAzureRmContainerName: 'mycontainer'
+        backendAzureRmKey: 'propel.terraform.tfstate'
+        allowTelemetryCollection: true
+      displayName: 'Terraform init'
+
+    - task: TerraformCLI@2
+      inputs:
+        command: 'workspace'
+        commandOptions: '-or-create'
+        allowTelemetryCollection: true
+        workspaceName: $(env)
+      displayName: 'Workspace Selection'
+
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        buildType: 'current'
+        artifactName: 'tfplan'
+        targetPath: '$(System.DefaultWorkingDirectory)'
+      displayName: 'Download Pipeline Artifacts'
+   
+    - task: TerraformCLI@2
+      inputs:
+        command: 'apply'
+        environmentServiceName: 'dev-propel-subscription'
+        commandOptions: '$(System.DefaultWorkingDirectory)/$(env)tfplan'
+        allowTelemetryCollection: true
+      displayName: 'Terraform Apply'
