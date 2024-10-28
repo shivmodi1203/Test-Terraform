@@ -35,7 +35,7 @@ resource "azurerm_storage_blob" "RootCACertificate" {
   storage_account_name   = azurerm_storage_account.storage.name
   storage_container_name = azurerm_storage_container.container.name
   type                   = "Block"
-  source                 = "${path.module}/certs/DevPropel_RootCACertificate.pfx"
+  source                 = "${path.module}/certs/DevPropel_RootCACertificate.pem"
   content_type           = "text/html"
   depends_on = [ azurerm_storage_container.container ]
 }
@@ -44,7 +44,7 @@ resource "azurerm_storage_blob" "PrimaryRootCACertificate" {
   storage_account_name   = azurerm_storage_account.storage.name
   storage_container_name = azurerm_storage_container.container.name
   type                   = "Block"
-  source                 = "${path.module}/certs/DevPropel_PrimaryRootCACertificate.pfx"
+  source                 = "${path.module}/certs/DevPropel_PrimaryRootCACertificate.pem"
   content_type           = "text/html"
   depends_on = [ azurerm_storage_container.container ]
 }
@@ -53,7 +53,7 @@ resource "azurerm_storage_blob" "SecondaryRootCACertificate" {
   storage_account_name   = azurerm_storage_account.storage.name
   storage_container_name = azurerm_storage_container.container.name
   type                   = "Block"
-  source                 = "${path.module}/certs/DevPropel_SecondaryRootCACertificate.pfx"
+  source                 = "${path.module}/certs/DevPropel_SecondaryRootCACertificate.pem"
   content_type           = "text/html"
   depends_on = [ azurerm_storage_container.container ]
 }
